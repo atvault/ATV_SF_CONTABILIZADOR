@@ -1,0 +1,45 @@
+# --- Secretos y credenciales (nunca commitear) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+*.jks
+secrets/
+# Volcados locales de la CLI / listados de orgs con accessToken
+orglist.json
+**/auth.json
+
+# --- Salesforce DX / CLI (caché local; puede incluir datos sensibles) ---
+.sfdx/
+.sf/
+.localdevserver/
+**/.sf/
+**/deploy-results/
+
+# --- Node / herramientas front (si agregás package.json en el proyecto) ---
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# --- SO / IDE ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+*.swp
+*.suo
+*.user
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# --- Logs y temporales ---
+*.log
+tmp/
+temp/
+coverage/
+
+# --- Cursor: sesiones de terminal (rutas locales); descomentá .cursor/ si no versionás reglas ---
+.cursor/terminals/
