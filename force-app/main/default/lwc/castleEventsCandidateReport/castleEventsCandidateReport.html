@@ -1,0 +1,148 @@
+<template>
+  <lightning-card>
+    <div class="slds-p-around_small">
+      <p class="slds-text-body_small slds-m-bottom_small">
+        Solo entran <strong>leads</strong> con <code>Fecha_Conversi_n_MKT__c</code> informada. Se consideran
+        <strong>eventos y tareas</strong> cuya fecha está <strong>entre la creación del lead y la conversión MKT</strong>
+        (inclusive). Actividades anteriores a la creación del lead no entran. Tareas: asunto
+        <code>R -</code> o <code>T -</code> (si no hay <code>ActivityDate</code> se usa la fecha de finalización).
+        Contactos con <code>Candidato__c</code> cuentan como el mismo lead.
+      </p>
+
+      <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-input
+            type="date"
+            label="Conversión MKT desde (Lead)"
+            value={conversionDateFrom}
+            onchange={handleConversionFrom}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-input
+            type="date"
+            label="Conversión MKT hasta"
+            value={conversionDateTo}
+            onchange={handleConversionTo}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-record-picker
+            label="Filtrar por propietario de la actividad"
+            placeholder="Buscar usuario"
+            object-api-name="User"
+            value={ownerUserId}
+            onchange={handleOwnerChange}
+          ></lightning-record-picker>
+        </div>
+        <div class="slds-col slds-size_1-of-1">
+          <lightning-button variant="brand" label="Aplicar filtros" onclick={applyFilters} class="slds-m-right_x-small"></lightning-button>
+          <lightning-button label="Limpiar" onclick={clearFilters}></lightning-button>
+        </div>
+      </div>
+
+      <template if:false={loading}>
+        <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+            <div class="slds-box slds-theme_shade slds-p-around_small">
+              <div class="slds-text-align_center slds-text-title_caps slds-m-bottom_xx-small">Total actividades</div>
+              <div class="slds-text-align_center slds-text-heading_large">{totalActivities}</div>
+              <div class="slds-text-align_center slds-text-body_small slds-text-color_weak">Eventos + tareas (R - / T -)</div>
+            </div>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+            <div class="slds-box slds-theme_shade slds-p-around_small">
+              <div class="slds-text-align_center slds-text-title_caps slds-m-bottom_xx-small">Tareas / lead</div>
+              <div class="slds-text-align_center slds-text-heading_medium">{avgTasksLabel}</div>
+              <div class="slds-text-align_center slds-text-body_small slds-text-color_weak">Total tareas ÷ leads (universo)</div>
+            </div>
+          </div>
+          <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+            <div class="slds-box slds-theme_shade slds-p-around_small">
+              <div class="slds-text-align_center slds-text-title_caps slds-m-bottom_xx-small">Eventos / lead</div>
+              <div class="slds-text-align_center slds-text-heading_medium">{avgEventsLabel}</div>
+              <div class="slds-text-align_center slds-text-body_small slds-text-color_weak">Total eventos ÷ leads (universo)</div>
+            </div>
+          </div>
+        </div>
+        <p class="slds-text-body_small slds-m-bottom_small slds-text-color_weak">
+          Propietarios con actividad en ventana: {ownerRowCount} · Filas detalle (propietario–lead): {detailRowCount} · Leads en universo
+          (filtro conversión): {leadPoolCount}
+        </p>
+      </template>
+
+      <template if:true={loading}>
+        <lightning-spinner alternative-text="Cargando"></lightning-spinner>
+      </template>
+
+      <template if:false={loading}>
+        <template if:true={rows.length}>
+          <div class="slds-scrollable_x">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered report-detail-table">
+              <thead>
+                <tr class="slds-line-height_reset">
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Propietario">Propietario</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Lead">Lead</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Creación del lead (GMT)">Creación lead</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Fecha conversión MKT">Conversión MKT</div>
+                  </th>
+                  <th class="slds-text-title_caps" scope="col">
+                    <div class="slds-truncate" title="Contacto (Candidato__c)">Contacto (candidato)</div>
+                  </th>
+                  <th class="slds-text-title_caps slds-text-align_right" scope="col">
+                    <div class="slds-truncate" title="Eventos">Total eventos</div>
+                  </th>
+                  <th class="slds-text-title_caps slds-text-align_right" scope="col">
+                    <div class="slds-truncate" title="Tareas">Total tareas</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <template for:each={rows} for:item="row">
+                  <tr key={row.rowKey} class="slds-hint-parent">
+                    <template if:true={row.showOwnerCell}>
+                      <td rowspan={row.ownerRowSpan} class="slds-cell-wrap slds-align-top owner-cell">
+                        <a href={row.ownerUrl} class="slds-text-link">{row.ownerName}</a>
+                      </td>
+                    </template>
+                    <td class="slds-cell-wrap">
+                      <a href={row.leadUrl} class="slds-text-link">{row.leadName}</a>
+                      <span class="slds-text-body_small slds-text-color_weak"> ({row.leadId})</span>
+                    </td>
+                    <td class="slds-cell-wrap slds-text-body_small">{row.leadCreatedDateStr}</td>
+                    <td class="slds-cell-wrap slds-text-body_small">{row.leadConversionDateStr}</td>
+                    <td class="slds-cell-wrap">
+                      <template if:true={row.hasRelatedContacts}>
+                        <template for:each={row.relatedContacts} for:item="ct">
+                          <div key={ct.contactId} class="slds-m-bottom_xx-small">
+                            <a href={ct.contactUrl} class="slds-text-link">{ct.contactName}</a>
+                            <span class="slds-text-body_small slds-text-color_weak"> ({ct.contactId})</span>
+                          </div>
+                        </template>
+                      </template>
+                      <template if:false={row.hasRelatedContacts}>
+                        <span class="slds-text-color_weak">—</span>
+                      </template>
+                    </td>
+                    <td class="slds-text-align_right">{row.totalEvents}</td>
+                    <td class="slds-text-align_right">{row.totalTasks}</td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <template if:false={rows.length}>
+          <div class="slds-text-align_center slds-p-vertical_large slds-text-color_weak">Sin resultados con los filtros actuales.</div>
+        </template>
+      </template>
+    </div>
+  </lightning-card>
+</template>

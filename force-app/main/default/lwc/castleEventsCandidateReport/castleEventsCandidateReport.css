@@ -1,0 +1,8 @@
+.report-detail-table .owner-cell {
+  min-width: 10rem;
+  vertical-align: top;
+}
+
+.report-detail-table tbody td {
+  vertical-align: top;
+}

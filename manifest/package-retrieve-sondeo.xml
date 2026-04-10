@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Usar cuando el reporte cuenta Sondeo esté desplegado en la org destino. -->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+  <types>
+    <members>CastleAccountSondeoReportSvc</members>
+    <members>CastleAccountSondeoReportSvcTest</members>
+    <members>CastleAccountSondeoReportController</members>
+    <members>CastleAccountSondeoReportCtrlTest</members>
+    <name>ApexClass</name>
+  </types>
+  <types>
+    <members>castleAccountSondeoReport</members>
+    <name>LightningComponentBundle</name>
+  </types>
+  <types>
+    <members>Castle_Account_Sondeo_Report</members>
+    <name>PermissionSet</name>
+  </types>
+  <version>61.0</version>
+</Package>
